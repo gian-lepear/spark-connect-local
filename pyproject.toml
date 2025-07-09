@@ -1,0 +1,25 @@
+[project]
+name = "spark-connect"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Giancarlo Lester", email = "gian.lepear@gmail.com" }
+]
+requires-python = ">=3.12.10"
+dependencies = [
+    "googleapis-common-protos>=1.70.0",
+    "grpcio>=1.73.1",
+    "grpcio-status>=1.71.2",
+    "minio>=7.2.15",
+    "pandas>=2.3.1",
+    "protobuf==5.28.3", # frozen to prevent errors
+    "pyarrow>=20.0.0",
+    "pyspark>=4.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.16.1",
+    "ruff>=0.12.2",
+]

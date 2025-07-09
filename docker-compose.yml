@@ -1,0 +1,62 @@
+services:
+  master:
+    build:
+      context: spark
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ENDPOINT=${AWS_ENDPOINT}
+      - SPARK_MASTER_HOST=master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    entrypoint: ["/bin/bash", "-c", "/opt/spark/entrypoint.sh"]
+    ports:
+      - "4040:4040" # Spark Driver UI
+      - "8080:8080" # Spark Master UI
+      - "7077:7077" # Internal communication
+      - "15002:15002" # Spark Connect
+    volumes:
+      - ./sample_data:/opt/spark/data
+    networks:
+      - spark-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    build:
+      context: spark
+      dockerfile: Dockerfile
+    depends_on:
+      master:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ENDPOINT=${AWS_ENDPOINT}
+      - SPARK_WORKER_CORES=${SPARK_CONNECT_EXECUTORS_CORE:-4}
+      - SPARK_WORKER_MEMORY=${SPARK_CONNECT_EXECUTORS_MEMORY:-8g}
+      - SPARK_WORKER_WEBUI_PORT=8081
+      - SPARK_MASTER=spark://master:7077
+    command: >
+      /opt/spark/sbin/start-worker.sh
+      spark://master:7077
+      --cores ${SPARK_CONNECT_EXECUTORS_CORE:-4}
+      --memory ${SPARK_CONNECT_EXECUTORS_MEMORY:-8g}
+    ports:
+      - "8081:8081" # Worker UI
+    volumes:
+      - ./sample_data:/opt/spark/data
+    networks:
+      - spark-network
+
+networks:
+  spark-network:
